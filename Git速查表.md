@@ -3,8 +3,13 @@
 > 本机环境已确认（2026-11-01）：
 > - git 2.55.0.windows.3
 > - 全局身份：`Dust` / `3413866140@qq.com`
-> - SSH 22 端口**通**，公钥未注册到 GitHub（唯一待办）
-> - HTTPS 443 可用但不稳定（`ls-remote` 偶发 `expected flush after ref listing`）
+> - **GitHub 账号：`Miller3413866140`** —— 不是 `Miller`（被别人占用），也不是 `MILLER112019`（不存在）
+> - **SSH 已打通**：`ssh -T git@github.com` → `Hi Miller3413866140!`
+>   指纹 `SHA256:Y+hU9pv8QcrOJqiUVxlG94SdK+CsEPfoVHvpag4Jk/E`
+> - 已配 `core.quotepath false`（中文名不转义）、`core.autocrlf false`（关 CRLF 警告）
+> - ⚠️ **`github.com` 的 443 端口被 RST 阻断**：网页打不开、`git clone https://...` 失败、
+>   浏览器报 `ERR_CONNECTION_RESET`。但 **`api.github.com` 正常**（0.5 秒响应），**SSH 22 端口正常**。
+>   → **结论：仓库操作用 SSH 地址，别用 HTTPS。** 网页访问需要加速工具或手机流量。
 
 ---
 
@@ -184,8 +189,17 @@ git clone git@github.com:用户名/仓库名.git
 git remote set-url origin git@github.com:用户名/仓库名.git   # 已有仓库切过去
 ```
 
-> 本机已确认 `ssh -T git@github.com` 返回 `Permission denied (publickey)`
-> —— 这是**网络通了但公钥没登记**的标志，不是墙的问题。加完公钥即可。
+> **本机已于 2026-11-01 配置成功**，`ssh -T git@github.com` 返回
+> `Hi Miller3413866140! You've successfully authenticated...`。
+>
+> 若以后又报 `Permission denied (publickey)`，按这个顺序排查：
+> 1. `ssh -vT git@github.com | grep -i offering` —— 看 SSH 提交的是哪把钥匙
+> 2. `ssh-keygen -lf ~/.ssh/id_ed25519.pub` —— 拿到本地指纹
+> 3. 打开 https://github.com/settings/keys —— 对比页面上的指纹是否一致
+> 4. 不一致 = key 没加上；一致但仍失败 = Key type 可能选成了 Signing Key（要选 Authentication Key）
+>
+> ⚠️ 加 key 时**别把公钥粘进 GitHub 搜索框**（会返回 404 / 0 结果），
+> 必须走 Settings → SSH and GPG keys → New SSH key。
 
 ### 路线 B：HTTPS + Personal Access Token
 
@@ -208,7 +222,8 @@ git config --global credential.helper manager
 |---|---|---|
 | `warning: LF will be replaced by CRLF` | Windows 换行符差异 | 无害。想彻底关掉：`git config --global core.autocrlf false` |
 | `Permission denied (publickey)` | 公钥没登记到 GitHub | 见上方路线 A |
-| `expected flush after ref listing` | HTTPS 传输被中途打断（网络干扰） | 重试；或改用 SSH |
+| `expected flush after ref listing` | HTTPS 传输被中途打断 | 改用 SSH 地址。本机 443 被 RST，重试意义不大 |
+| 浏览器 `ERR_CONNECTION_RESET` | 443 直连被阻断（网页打不开） | 装 Watt Toolkit 加速，或手机流量应急加 key |
 | `fatal: destination path already exists` | 目录已存在 | 换个名字，或先删掉旧目录 |
 | `rejected: non-fast-forward` | 远程有你本地没有的提交 | 先 `git pull` 再 `git push` |
 | 推送别人的仓库 403 | 你不是协作者，没写权限 | 先 **Fork** 到自己账号，再推到自己的 fork |
@@ -260,20 +275,38 @@ git push -u origin main
 
 ---
 
-## 十二、这次的练习目录
+## 十二、这次的练习成果
+
+本地目录：`C:\Users\Dust\WorkBuddy\2026-11-01-15-44-23\git-practice\`
 
 ```
-C:\Users\Dust\WorkBuddy\2026-11-01-15-44-23\git-practice\
-└── demo-hello\          ← 从 octocat/Hello-World 克隆来的练习仓库
+git-practice/            ← 自己的仓库，已推送到 GitHub
+├── .gitignore
+├── README.md
+├── Git速查表.md
+└── demo-hello/          ← 克隆别人的练习仓库（已被 .gitignore 排除）
     └── README
 ```
 
-练习仓库已完成的操作：
-1. `git clone` 下载真实仓库
-2. 改 README → `status` 看到红色 → `diff` 看到增行 → `add` → `commit`
-3. 乱写一行 → `git restore` 干净回退
-4. `switch -c feature/note` → 提交功能 → 切回 master **文件自动还原** → `merge` 合并
-5. `branch -r` 看到远程分支 → `fetch` → `remote show origin`
+远程地址：`git@github.com:Miller3413866140/git-practice.git`
+网页：https://github.com/Miller3413866140/git-practice
 
-**这个仓库是别人的，push 会被拒绝（403）——这是正常的，不是配置错误。**
-要练推送，得先在自己账号下建仓库或 Fork。
+### 已完成的操作
+
+| # | 操作 | 结果 |
+|---|---|---|
+| 1 | `git clone` 克隆 octocat/Hello-World | 拿到全部 3 条历史 |
+| 2 | 改文件 → `status` → `diff` → `add` → `commit` | 提交 `0718356` |
+| 3 | 乱写一行 → `git restore` | 干净回退 |
+| 4 | `switch -c feature/note` → 提交 → 切回 master | 文件自动还原，功能没丢 |
+| 5 | `merge feature/note` | `Fast-forward` 合并成功 |
+| 6 | `remote add origin`（SSH 地址） | 关联成功 |
+| 7 | `push -u origin main` | **首次推送成功** |
+| 8 | 改 README → `commit` → `push` | **增量推送 `0718356..3c6a4fb`** |
+
+### 关键教训
+
+- **`git clone https://...` 在本机会失败**（443 被 RST）。克隆也要用 SSH 地址：
+  `git clone git@github.com:用户名/仓库名.git`
+- 建 GitHub 仓库时**三个勾选项全部别勾**，否则远程先有一条提交，本地推上去会 `non-fast-forward`
+- 别人的仓库 push 必然 403，要贡献代码得先 **Fork**

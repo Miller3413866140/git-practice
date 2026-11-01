@@ -1,0 +1,19 @@
+# 练习用的克隆仓库，不纳入版本管理
+demo-hello/
+
+# 系统与编辑器杂项
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+
+# 敏感信息，永远不要提交
+.env
+.env.local
+*.key
+*.pem
